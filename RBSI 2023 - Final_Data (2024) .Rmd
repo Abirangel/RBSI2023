@@ -1,0 +1,402 @@
+##General Info: \# - Author Name: Abigail Rangel \# - Data: CMPS 2016 \# - Project: RBSI 2023
+
+##Packages #I will be installing packages to help with my dataset
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(haven)
+library(stargazer)
+library(ggplot2)
+library(estimatr)
+library(ggeffects)
+```
+
+## Formatting My Code
+
+####I will be loading my data into under a new name of "cmps_data"
+
+```{r}
+cmps_data <- da38040.0001
+```
+
+####Creating my new varaible of people who are on parole or probation
+
+```{r}
+cmps_data <- cmps_data %>% mutate(incar_ppl = ifelse(C289== "(1) Yes, I have", 1,
+ifelse(C289== "(2) Yes, someone I know", 0 ,0)))
+incar_data <- subset(cmps_data, incar_ppl == 1)
+
+##Remember to add race such as latine and Black back into this data set
+```
+
+####Adding levels of disenfranchisment to my incar_data set to see if state has any impact
+```{r}
+
+# State1 is states that have no restrictions on voting, and states that have restrictions but only if your currently incarcerated (24 states + DC)
+incar_data <- incar_data %>% mutate(state1 = ifelse(S4== "ME" | S4 == "VT"  | S4 == "DC"
+| S4=="CA" |S4=="MI" | S4=="CO" | S4=="CT" | S4=="HI" | S4=="IL" | S4=="IN" | S4=="MD" | S4=="MA" | S4=="MT" | S4=="NV" | S4=="NH" | S4=="NJ" | S4=="NY" | S4=="NC" | S4=="ND" | S4=="OH" | S4=="OR" | S4=="PA" | S4=="RI" | S4=="UT" | S4=="WA", 1,
+ifelse(S4=="AK" | S4=="AR"  | S4=="GA"  | S4=="ID"  | S4=="KS"  | S4=="LA"  | S4=="MN"  | S4=="MO"  | S4=="NM"  | S4=="OK"  | S4=="SC" | S4=="SD"  | S4=="TX"  | S4=="WV"  | S4=="WI" | S4=="AL" | S4=="AZ" | S4=="DE" | S4=="FL" | S4=="IA" | S4=="KY" | S4=="MS" | S4=="NE" | S4=="TN" | S4=="VA" | S4=="WY", 0, 0)))
+
+# State2 is states that deny voting rights to people on/in prison, parole, and probation (15 states)
+incar_data <- incar_data %>% mutate(state2 = ifelse(S4== "ME" | S4 == "VT"  | S4 == "DC"
+| S4=="CA" |S4=="MI" | S4=="CO" | S4=="CT" | S4=="HI" | S4=="IL" | S4=="IN" | S4=="MD" | S4=="MA" | S4=="MT" | S4=="NV" | S4=="NH" | S4=="NJ" | S4=="NY" | S4=="NC" | S4=="ND" | S4=="OH" | S4=="OR" | S4=="PA" | S4=="RI" | S4=="UT" | S4=="WA", 0,
+ifelse(S4=="AK" | S4=="AR"  | S4=="GA"  | S4=="ID"  | S4=="KS"  | S4=="LA"  | S4=="MN"  | S4=="MO"  | S4=="NM"  | S4=="OK"  | S4=="SC" | S4=="SD"  | S4=="TX"  | S4=="WV"  | S4=="WI" , 1,
+ifelse(S4=="AL" | S4=="AZ" | S4=="DE" | S4=="FL" | S4=="IA" | S4=="KY" | S4=="MS" | S4=="NE" | S4=="TN" | S4=="VA" | S4=="WY", 0, 0))))
+
+# State3 is states that deny voting rights to people on/in prison, parole, probation, and post-sentence (11 states)
+incar_data <- incar_data %>% mutate(state3 = ifelse(S4== "ME" | S4 == "VT"  | S4 == "DC"
+| S4=="CA" |S4=="MI" | S4=="CO" | S4=="CT" | S4=="HI" | S4=="IL" | S4=="IN" | S4=="MD" | S4=="MA" | S4=="MT" | S4=="NV" | S4=="NH" | S4=="NJ" | S4=="NY" | S4=="NC" | S4=="ND" | S4=="OH" | S4=="OR" | S4=="PA" | S4=="RI" | S4=="UT" | S4=="WA", 0,
+ifelse(S4=="AK" | S4=="AR"  | S4=="GA"  | S4=="ID"  | S4=="KS"  | S4=="LA"  | S4=="MN"  | S4=="MO"  | S4=="NM"  | S4=="OK"  | S4=="SC" | S4=="SD"  | S4=="TX"  | S4=="WV"  | S4=="WI" , 0,
+ifelse(S4=="AL" | S4=="AZ" | S4=="DE" | S4=="FL" | S4=="IA" | S4=="KY" | S4=="MS" | S4=="NE" | S4=="TN" | S4=="VA" | S4=="WY", 1, 0))))
+
+
+```
+
+
+####Adding dummies for my cmps_data for race
+
+
+```{r}
+##Controls
+####Adding dummies for my controls in the cmps_data and incar_data
+
+#Gender
+#   - 0, Male
+#   - 1, Female
+cmps_data <- cmps_data %>% mutate(gender = ifelse(S3== "(1) Female", 1,
+ifelse(S3== "(2) Male", 0 ,0)))
+
+incar_data <- incar_data %>% mutate(gender = ifelse(S3== "(1) Female", 1,
+ifelse(S3== "(2) Male", 0 ,0)))
+
+#I am not creating dummy variables us as control for my data
+#     - 0, not registered
+#     - 1, registered
+cmps_data <- cmps_data %>% mutate(reg_vote = ifelse(S5== "(1) Yes", 1,
+ifelse(S5== "(2) No, not registered", 0 ,0)))
+
+incar_data <- incar_data %>% mutate(reg_vote = ifelse(S5== "(1) Yes", 1,
+ifelse(S5== "(2) No, not registered", 0 ,0)))
+
+# Party identification
+#     - 1, Rep
+#     - 2, Dem 
+#     - 3, Ind
+#     - 4, Other
+cmps_data <- cmps_data %>% mutate(party_id = ifelse(C25== "(1) Republican", 1,
+ifelse(C25== "(2) Democrat", 2,
+ifelse(C25== "(3) Independent", 3,
+ifelse(C25== "(4) Other party", 4,0)))))
+
+incar_data <- incar_data %>% mutate(party_id = ifelse(C25== "(1) Republican", 1,
+ifelse(C25== "(2) Democrat", 2,
+ifelse(C25== "(3) Independent", 3,
+ifelse(C25== "(4) Other party", 4,0)))))
+
+#Race
+cmps_data <- cmps_data %>% mutate(race = ifelse(ETHNIC_QUOTA== "(1) White, Not-Hispanic", 1,
+ifelse(ETHNIC_QUOTA== "(2) Hispanic or Latino", 2,
+ifelse(ETHNIC_QUOTA== "(3) Black or African American", 3,
+ifelse(ETHNIC_QUOTA== "(4) Asian American", 4,
+ifelse(ETHNIC_QUOTA== "(5) Middle Eastern or Arab", 5,
+ifelse(ETHNIC_QUOTA== "(6) American Indian/Native American", 6, 0)))))))
+
+incar_data <- incar_data %>% mutate(race = ifelse(ETHNIC_QUOTA== "(1) White, Not-Hispanic", 1,
+ifelse(ETHNIC_QUOTA== "(2) Hispanic or Latino", 2,
+ifelse(ETHNIC_QUOTA== "(3) Black or African American", 3,
+ifelse(ETHNIC_QUOTA== "(4) Asian American", 4,
+ifelse(ETHNIC_QUOTA== "(5) Middle Eastern or Arab", 5,
+ifelse(ETHNIC_QUOTA== "(6) American Indian/Native American", 6, 0)))))))
+
+#Races
+------------------------
+#Latine
+incar_data <- incar_data %>% mutate(latine = ifelse(ETHNIC_QUOTA== "(2) Hispanic or Latino", 1,0))
+
+#Black
+incar_data <- incar_data %>% mutate(Black = ifelse(ETHNIC_QUOTA== "(3) Black or African American", 1,0))
+
+#POC 
+incar_data <- incar_data %>% mutate(POC = ifelse(ETHNIC_QUOTA== "(3) Black or African American"|ETHNIC_QUOTA=="(2) Hispanic or Latino"|ETHNIC_QUOTA=="(4) Asian American"|ETHNIC_QUOTA=="(5) Middle Eastern or Arab"|ETHNIC_QUOTA=="(6) American Indian/Native American", 1,0))
+
+
+# Education
+#     - 1, Grades 1 - 8
+#     - 2, Some high school
+#     - 3, High school graduate or GED
+#     - 4, Some college, 2-year degree
+#     - 5, 4-year college graduate
+#     - 6, Post-graduate education
+cmps_data <- cmps_data %>% mutate(educ = ifelse(C381== "(1) Grades 1 - 8", 1,
+ifelse(C381== "(2) Some high school", 2,
+ifelse(C381== "(3) High school graduate or GED", 3,
+ifelse(C381== "(4) Some college, 2-year degree", 4,
+ifelse(C381== "(5) 4-year college graduate", 5,
+ifelse(C381== "(6) Post-graduate education", 6,0)))))))
+
+incar_data <- incar_data %>% mutate(educ = ifelse(C381== "(1) Grades 1 - 8", 1,
+ifelse(C381== "(2) Some high school", 2,
+ifelse(C381== "(3) High school graduate or GED", 3,
+ifelse(C381== "(4) Some college, 2-year degree", 4,
+ifelse(C381== "(5) 4-year college graduate", 5,
+ifelse(C381== "(6) Post-graduate education", 6,0)))))))
+
+# Education
+# scale 1 being the lowest and 12 the highest
+cmps_data <- cmps_data %>% mutate(income = ifelse(C383== "(01) Less than $20,000", 1,
+ifelse(C383== "(02) $20,000 to $29,999", 2,
+ifelse(C383== "(03) $30,000 to $39,999", 3,
+ifelse(C383== "(04) $40,000 to $49,999", 4,
+ifelse(C383== "(05) $50,000 to $59,999", 5,
+ifelse(C383== "(06) $60,000 to $69,999", 6,
+ifelse(C383== "(07) $70,000 to $79,999", 7,
+ifelse(C383== "(08) $80,000 to $89,999", 8,
+ifelse(C383== "(09) $90,000 to $99,999", 9,
+ifelse(C383== "(10) $100,000 to $149,999", 10,
+ifelse(C383== "(11) $150,000 to $199,999", 11,
+ifelse(C383== "(12) $200,000 or more", 12,NA)))))))))))))
+
+incar_data <- incar_data %>% mutate(income = ifelse(C383== "(01) Less than $20,000", 1,
+ifelse(C383== "(02) $20,000 to $29,999", 2,
+ifelse(C383== "(03) $30,000 to $39,999", 3,
+ifelse(C383== "(04) $40,000 to $49,999", 4,
+ifelse(C383== "(05) $50,000 to $59,999", 5,
+ifelse(C383== "(06) $60,000 to $69,999", 6,
+ifelse(C383== "(07) $70,000 to $79,999", 7,
+ifelse(C383== "(08) $80,000 to $89,999", 8,
+ifelse(C383== "(09) $90,000 to $99,999", 9,
+ifelse(C383== "(10) $100,000 to $149,999", 10,
+ifelse(C383== "(11) $150,000 to $199,999", 11,
+ifelse(C383== "(12) $200,000 or more", 12,NA)))))))))))))
+```
+
+##Indepedent Varaibles
+
+```{r}
+## Now I am going to fix the code for my dependent variables, Most of theses are on scales
+
+#c47. How much of the time do you trust the Federal government in Washington D.C. to do what is right?
+cmps_data <- cmps_data %>% mutate(gov_cares = ifelse(C47== "(1) Just about always", 4,
+ifelse(C47== "(2) Most of the time", 3,
+ifelse(C47== "(3) Only sometimes", 2,
+ifelse(C47== "(4) Never at all", 1,0)))))
+
+incar_data <- incar_data %>% mutate(gov_cares = ifelse(C47== "(1) Just about always", 4,
+ifelse(C47== "(2) Most of the time", 3,
+ifelse(C47== "(3) Only sometimes", 2,
+ifelse(C47== "(4) Never at all", 1,0)))))
+
+#C31 When it comes to politics, do you think of yourself as liberal, moderate, conservative
+cmps_data <- cmps_data %>% mutate(self_id = ifelse(C31== "(1) Very Liberal", 1,
+ifelse(C31== "(2) Somewhat Liberal", 2,
+ifelse(C31== "(3) Moderate", 3,
+ifelse(C31== "(4) Somewhat Conservative", 4,
+ifelse(C31== "(5) Very Conservative", 5 ,0))))))
+
+incar_data <- incar_data %>% mutate(self_id = ifelse(C31== "(1) Very Liberal", 1,
+ifelse(C31== "(2) Somewhat Liberal", 2,
+ifelse(C31== "(3) Moderate", 3,
+ifelse(C31== "(4) Somewhat Conservative", 4,
+ifelse(C31== "(5) Very Conservative", 5 ,0))))))
+
+#bl171. How important do you think it is to vote, compared to other political activities? 
+#ONLY ASKED TO LATINO AND BLACK
+cmps_data <- cmps_data %>% mutate(voting_import = ifelse(BL171== "(1) The most important", 5,
+ifelse(BL171== "(2) More important than most", 4,
+ifelse(BL171== "(3) As important as other activities", 3,
+ifelse(BL171== "(4) Not as important", 2,
+ifelse(BL171== "(5) Not important at all", 1 ,0))))))
+
+incar_data <- incar_data %>% mutate(voting_import = ifelse(BL171== "(1) The most important", 5,
+ifelse(BL171== "(2) More important than most", 4,
+ifelse(BL171== "(3) As important as other activities", 3,
+ifelse(BL171== "(4) Not as important", 2,
+ifelse(BL171== "(5) Not important at all", 1 ,0))))))
+
+#C53 Do you participate in one or more than one social, cultural, civic, political group or union or do you not participate in the activities of any such groups?
+cmps_data <- cmps_data %>% mutate(civil_part = ifelse(C53== "(2) Yes, more than one", 3,
+ifelse(C53== "(1) Yes, one", 2,
+ifelse(C53== "(3) None", 1 ,0))))
+
+incar_data <- incar_data %>% mutate(civil_part = ifelse(C53== "(2) Yes, more than one", 3,
+ifelse(C53== "(1) Yes, one", 2,
+ifelse(C53== "(3) None", 1 ,0))))
+
+#C66 In the last twelve months, have you: Attended a protest march, demonstration, or rally?
+cmps_data <- cmps_data %>% mutate(attend_protest = ifelse(C66== "(1) Yes", 1,
+ifelse(C66== "(2) No", 0, NA)))
+
+incar_data <- incar_data %>% mutate(attend_protest = ifelse(C66== "(1) Yes", 1,
+ifelse(C66== "(2) No", 0, NA)))
+
+#C106 How much do you agree or disagree with the following statement: public officials don’t care much what people like me think?
+cmps_data <- cmps_data %>% mutate(politician_cares = ifelse(C106== "(1) Strongly agree", 5,
+ifelse(C106== "(2) Agree", 4,
+ifelse(C106== "(3) Neither agree nor disagree", 3,
+ifelse(C106== "(4) Disagree", 2,
+ifelse(C106== "(5) Strongly disagree", 1 ,0))))))
+
+incar_data <- incar_data %>% mutate(politician_cares = ifelse(C106== "(1) Strongly agree", 5,
+ifelse(C106== "(2) Agree", 4,
+ifelse(C106== "(3) Neither agree nor disagree", 3,
+ifelse(C106== "(4) Disagree", 2,
+ifelse(C106== "(5) Strongly disagree", 1 ,0))))))
+
+#C233 How effective, if at all, are the following tactics for getting your voice heard by elected officials: Voting
+cmps_data <- cmps_data %>% mutate(voting_effect = ifelse(C233== "(1) Very effective", 4,
+ifelse(C233== "(2) Somewhat effective", 3,
+ifelse(C233== "(3) Not too effective", 2,
+ifelse(C233== "(4) Not at all effective", 1,NA)))))
+
+incar_data <- incar_data %>% mutate(voting_effect = ifelse(C233== "(1) Very effective", 4,
+ifelse(C233== "(2) Somewhat effective", 3,
+ifelse(C233== "(3) Not too effective", 2,
+ifelse(C233== "(4) Not at all effective", 1,NA)))))
+
+#C234 How effective, if at all, are the following tactics for getting your voice heard by elected officials: Non-violent protest
+cmps_data <- cmps_data %>% mutate(protest_effect = ifelse(C234== "(1) Very effective", 4,
+ifelse(C234== "(2) Somewhat effective", 3,
+ifelse(C234== "(3) Not too effective", 2,
+ifelse(C234== "(4) Not at all effective", 1,NA)))))
+
+incar_data <- incar_data %>% mutate(protest_effect = ifelse(C234== "(1) Very effective", 4,
+ifelse(C234== "(2) Somewhat effective", 3,
+ifelse(C234== "(3) Not too effective", 2,
+ifelse(C234== "(4) Not at all effective", 1,NA)))))
+
+#C236 How effective, if at all, are the following tactics for getting your voice heard by elected officials: riot
+cmps_data <- cmps_data %>% mutate(riot_effect = ifelse(C236== "(1) Very effective", 4,
+ifelse(C236== "(2) Somewhat effective", 3,
+ifelse(C236== "(3) Not too effective", 2,
+ifelse(C236== "(4) Not at all effective", 1,NA)))))
+
+incar_data <- incar_data %>% mutate(riot_effect = ifelse(C236== "(1) Very effective", 4,
+ifelse(C236== "(2) Somewhat effective", 3,
+ifelse(C236== "(3) Not too effective", 2,
+ifelse(C236== "(4) Not at all effective", 1,NA)))))
+```
+
+#Regressions/Analysis
+```{r}
+# Seeing if government cares about people like you across incarcerated and then within incarcerated people
+m2 <- lm(formula = gov_cares ~ state2 + state3  + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(m2, type = "text")
+```
+
+```{r}
+#Seeing who is most likely to see if incarceration impacts your ideology
+si2 <- lm(formula = self_id ~ state2 + state3 + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(si2, type = "text")
+```
+
+```{r}
+#Seeing who is most likely to see if incarceration impacts how important voting is
+vi2 <- lm(formula = voting_import ~ state2 + state3 + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(vi2, type = "text")
+```
+
+```{r}
+#Seeing who is most likely to see if incarceration impacts if you participated in a civic
+cp2 <- lm(formula = civil_part ~ state2 + state3 + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(cp2, type = "text")
+```
+
+```{r}
+#Seeing who is attends a protest, you are more likely to attend if you have been incarcerated 
+ap2 <- lm(formula = attend_protest ~ state2 + state3 + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(ap2, type = "text")
+```
+
+```{r}
+#if polticans care about
+pc2 <- lm(formula = politician_cares ~ state2 + state3 + gender + AGE + income + party_id + educ, data = incar_data)
+stargazer(pc2, type = "text")
+```
+
+```{r}
+#seeing how much voting has an effect
+ve2 <- lm(formula = voting_effect ~ state2 + state3 + gender + AGE + income + party_id + educ + POC, data = incar_data)
+stargazer(ve2, type = "text")
+```
+
+```{r}
+pe2 <- lm(formula = protest_effect ~ state2 + state3 + gender + AGE + income + party_id + educ + POC, data = incar_data)
+stargazer(pe2, type = "text")
+```
+
+```{r}
+re2 <- lm(formula = riot_effect ~ state2 + state3  + gender + AGE + income + party_id + educ + POC, data = incar_data)
+stargazer(re2, type = "text")
+```
+##Visuals - Tables/Graphs
+```{r}
+# Comparison of my 1st Hypothesis
+stargazer(ve2, pe2, re2, covariate.labels = c("Disenfranchisment 2", "Disenfranchisment 3", "Gender", "Age", "Income", "Party ID", "Education", "POC"), dep.var.labels = c("Voting", "Protest", "Riot"), type = "html", out = "voting_protest_riot_compared.html", digits = 2)
+```
+```{r}
+#Effectiveness of methods to get elected officials to recognize you
+stargazer(ve2, pe2, re2, covariate.labels = c("Disenfranchisment 2", "Disenfranchisment 3", "Gender", "Age", "Income", "Party ID", "Education"), dep.var.labels = c("Voting", "Protest", "Riot"), type = "html", out = "effective_methods_states_lvl.html", digits = 2)
+```
+```{r}
+#Tables for data regarding government caring
+effects <- ggpredict(m2,                                            # model
+             terms = c("state2", "state3"))                   # variables you want to graph
+p5 <- ggplot(effects, aes(x = x, y = predicted, color = group)) + 
+   geom_line() +
+   scale_color_manual(labels = c("Mid Disenfranchisment States", "Worst Disenfranchisment States"), values = c("purple", "red")) +
+      labs(x = "Incarcerated People",
+        y = "Government Caring",
+        title = "Correlation Between How Much Government Cares About 'People Like Me'", 
+        caption = "Source: CMPS Data, 2016") +
+   theme_classic()
+p5
+```
+
+```{r}
+effects <- ggpredict(vi2,                                            # model
+             terms = c("state2", "state3"))                   # variables you want to graph
+p2 <- ggplot(effects, aes(x = x, y = predicted, color = group)) + 
+   geom_line() +
+   scale_color_manual(labels = c("Mid Disenfranchisment States", "Worst Disenfranchisment States"), values = c("purple", "red")) +
+      labs(x = "Incarcerated People",
+        y = "Importance of Voting",
+        title = "Correlation Between Importance of Voting Levels of State Disenfranchisment", 
+        caption = "Source: CMPS Data, 2016") +
+   theme_classic()
+p2
+```
+
+```{r}
+out <- summary(si2) # Create a placeholder for the summary results
+out$coefficients
+
+n <- nrow(out$coefficients)                                                           # Number of coefficients in the model
+# Create a placeholder matrix, make sure you have 
+coefMat <- matrix(NA, n-1, 4)
+coefMat[,1] <- out$coefficients[2:n,1]
+coefMat[,2] <- out$coefficients[2:n,2]
+coefMat[,3] <- coefMat[,1] - qnorm(1-0.05/2)*coefMat[,2]
+coefMat[,4] <- coefMat[,1] + qnorm(1-0.05/2)*coefMat[,2]
+rownames(coefMat) <- c("Mid Disenfrancimsent States", "Worst Disenfrancimsent States", "Race", "Gender", "Income", "AGE","Party Identification", "Education")
+colnames(coefMat) <- c("coef", "std_err", "min", "max")
+df <- as.data.frame(coefMat)
+# Plot
+coefplot <- ggplot(data = df, aes(x = rownames(coefMat),
+                           y = coef)) + 
+   geom_hline(yintercept=0, colour="black", linewidth=1, linetype="dotted") +
+   geom_linerange(aes(ymin=min, ymax=max), linewidth=0.2, color="grey") + 
+   geom_point(color="blue") + 
+   labs(x="Coefficient", y="Ideological Scale", title="Ideological Identificaiton of Formely Incarcerated Groups by Degree of Disenfrancimsent") +  
+   coord_flip() + theme_classic()
+
+coefplot
+```
+
+```{r}
+stargazer(m2, pc2, covariate.labels = c("Disenfranchisment 2", "Disenfranchisment 3", "Gender", "Age", "Income", "Party ID", "Education"), dep.var.labels = c("Government Cares", "Politican Cares"), type = "html", out = "disillusionment.html", digits = 2)
+```
+```{r}
+stargazer(ap2, cp2, covariate.labels = c("Disenfranchisment 2", "Disenfranchisment 3", "Gender", "Age", "Income", "Party ID", "Education"), dep.var.labels = c("Attended Protest", "Civil Participation" ), type = "html", out = "part_outcomes.html", digits = 2)
+```
+
